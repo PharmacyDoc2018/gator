@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-
-	"github.com/PharmacyDoc2018/gator/internal/config"
 )
 
 func printConfigFile() {
@@ -25,20 +23,16 @@ func printConfigFile() {
 }
 
 func main() {
-	printConfigFile()
-
-	fmt.Printf("\n")
-	configStruct, err := config.Read()
+	state, err := initNewState()
 	if err != nil {
 		fmt.Println(err)
 	}
-	configStruct.SetUser("Jessica")
-	fmt.Println(configStruct)
-	printConfigFile()
 
-	fmt.Printf("\n")
-	configStruct.SetUser("Joseph")
-	fmt.Println(configStruct)
-	printConfigFile()
+	commands := initCommands()
 
+	err = exeCommand(state, commands, os.Args)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
