@@ -3,7 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+
+	_ "github.com/lib/pq"
 )
+
+//postgres://postgres:postgres@localhost:5432/gator
 
 func printConfigFile() {
 	homeDir, err := os.UserHomeDir()

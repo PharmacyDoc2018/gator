@@ -1,9 +1,11 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/PharmacyDoc2018/gator/internal/config"
+	"github.com/PharmacyDoc2018/gator/internal/database"
 )
 
 func initNewState() (*state, error) {
@@ -13,6 +15,14 @@ func initNewState() (*state, error) {
 		return nil, err
 	}
 	newState.config = config
+
+	db, err := sql.Open("postgres", "postgres://postgres:postgres@localhost:5432/gator")
+	if err != nil {
+		return nil, err
+	}
+	dbQueries := database.New(db)
+	newState.db = dbQueries
+
 	return &newState, nil
 }
 
