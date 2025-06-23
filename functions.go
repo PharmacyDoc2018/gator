@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
 	"github.com/PharmacyDoc2018/gator/internal/config"
 	"github.com/PharmacyDoc2018/gator/internal/database"
+	"github.com/google/uuid"
 )
 
 func initNewState() (*state, error) {
@@ -30,6 +32,7 @@ func initCommands() *commands {
 	var cmds commands
 	cmds.list = make(map[string]func(*state, command) error)
 	cmds.list["login"] = handlerLogin
+	cmds.list["register"] = handlerRegister
 	return &cmds
 }
 
@@ -62,4 +65,19 @@ func handlerLogin(s *state, cmd command) error {
 	fmt.Println("user has been set")
 	return nil
 
+}
+
+func handlerRegister(s *state, cmd command) error {
+	argNum := len(cmd.arguments)
+	if argNum != 1 {
+		return fmt.Errorf("argumment number error. expected 1 argument. receved %d", argNum)
+	}
+
+	var params database.CreateUserParams
+		params.ID = uuid.New(),
+		params.CreatedAt = time.Now(),
+		params.UpdatedAt = time.Now(),
+		params.Name = cmd.arguments[0]
+	
+	s.db.CreateUser(context.Background(),params)
 }
