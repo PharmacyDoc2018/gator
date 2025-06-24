@@ -35,6 +35,7 @@ func initCommands() *commands {
 	cmds.list["login"] = handlerLogin
 	cmds.list["register"] = handlerRegister
 	cmds.list["reset"] = handlerReset
+	cmds.list["users"] = handlerUsers
 	return &cmds
 }
 
@@ -116,5 +117,26 @@ func handlerReset(s *state, cmd command) error {
 		return err
 	}
 	fmt.Println("Users have been reset")
+	return nil
+}
+
+func handlerUsers(s *state, cmd command) error {
+	users, err := s.db.GetUsers(context.Background())
+	if err != nil {
+		return err
+	}
+
+	if len(users) == 0 {
+		fmt.Println("no users registered")
+		return nil
+	}
+	var printLine string
+	for _, user := range users {
+		printLine = fmt.Sprintf("* %s", user)
+		if user == s.config.CurrentUserName {
+			printLine += " (current)"
+		}
+		fmt.Println(printLine)
+	}
 	return nil
 }
