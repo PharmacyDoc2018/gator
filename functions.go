@@ -34,6 +34,7 @@ func initCommands() *commands {
 	cmds.list = make(map[string]func(*state, command) error)
 	cmds.list["login"] = handlerLogin
 	cmds.list["register"] = handlerRegister
+	cmds.list["reset"] = handlerReset
 	return &cmds
 }
 
@@ -89,7 +90,11 @@ func handlerRegister(s *state, cmd command) error {
 
 	newUser, err := s.db.CreateUser(context.Background(), params)
 	if err != nil {
-		return err
+		if fmt.Sprint(err) == "pq: duplicate key value violates unique constraint \"users_name_key\"" {
+			return fmt.Errorf("error: user already exists")
+		} else {
+			return err
+		}
 	}
 
 	err = s.config.SetUser(newUser.Name)
@@ -102,5 +107,14 @@ func handlerRegister(s *state, cmd command) error {
 	fmt.Println("CreatedAt:", newUser.CreatedAt)
 	fmt.Println("UpdatedAt:", newUser.UpdatedAt)
 	fmt.Println("Name:", newUser.Name)
+	return nil
+}
+
+func handlerReset(s *state, cmd command) error {
+	err := s.db.ResetUsers(context.Background())
+	if err != nil {
+		return err
+	}
+	fmt.Println("Users have been reset")
 	return nil
 }
