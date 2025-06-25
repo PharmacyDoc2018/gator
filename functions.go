@@ -11,22 +11,22 @@ import (
 	"github.com/google/uuid"
 )
 
-func initNewState() (*state, error) {
+func initNewState() (*state, *sql.DB, error) {
 	var newState state
 	config, err := config.Read()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	newState.config = config
 
 	db, err := sql.Open("postgres", "postgres://postgres:postgres@localhost:5432/gator")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	dbQueries := database.New(db)
 	newState.db = dbQueries
 
-	return &newState, nil
+	return &newState, db, nil
 }
 
 func initCommands() *commands {

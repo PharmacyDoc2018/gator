@@ -27,10 +27,11 @@ func printConfigFile() {
 }
 
 func main() {
-	state, err := initNewState()
+	state, db, err := initNewState()
 	if err != nil {
 		fmt.Println(err)
 	}
+	defer db.Close()
 
 	commands := initCommands()
 
