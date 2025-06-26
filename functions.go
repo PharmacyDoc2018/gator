@@ -158,7 +158,7 @@ func handlerAgg(s *state, cmd command) error {
 func handlerAddFeed(s *state, cmd command) error {
 	argNum := len(cmd.arguments)
 	if argNum != 2 {
-		return fmt.Errorf("argumment number error. expected 1 argument. receved %d", argNum)
+		return fmt.Errorf("argumment number error. expected 2 argument. receved %d", argNum)
 	}
 
 	currentUser, err := s.db.GetUser(context.Background(), s.config.CurrentUserName)
@@ -168,6 +168,11 @@ func handlerAddFeed(s *state, cmd command) error {
 
 	feedName := cmd.arguments[0]
 	feedURL := cmd.arguments[1]
+
+	_, err = fetchFeed(context.Background(), feedURL)
+	if err != nil {
+		return err
+	}
 
 	params := database.AddFeedParams{
 		ID:        uuid.New(),
