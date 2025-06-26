@@ -60,7 +60,7 @@ func exeCommand(s *state, c *commands, args []string) error {
 func handlerLogin(s *state, cmd command) error {
 	argNum := len(cmd.arguments)
 	if argNum != 1 {
-		return fmt.Errorf("argumment number error. expected 1. receved %d", argNum)
+		return fmt.Errorf("argumment number error: expected 1. receved %d.\nexpected syntax: login [name]", argNum)
 	}
 
 	loginName := cmd.arguments[0]
@@ -81,7 +81,7 @@ func handlerLogin(s *state, cmd command) error {
 func handlerRegister(s *state, cmd command) error {
 	argNum := len(cmd.arguments)
 	if argNum != 1 {
-		return fmt.Errorf("argumment number error. expected 1. receved %d", argNum)
+		return fmt.Errorf("argumment number error: expected 1. receved %d.\nexpected syntax: register [name]", argNum)
 	}
 
 	params := database.CreateUserParams{
@@ -114,6 +114,10 @@ func handlerRegister(s *state, cmd command) error {
 }
 
 func handlerReset(s *state, cmd command) error {
+	argNum := len(cmd.arguments)
+	if argNum > 0 {
+		return fmt.Errorf("error: reset command takes no arguments")
+	}
 	err := s.db.ResetUsers(context.Background())
 	if err != nil {
 		return err
@@ -123,6 +127,11 @@ func handlerReset(s *state, cmd command) error {
 }
 
 func handlerUsers(s *state, cmd command) error {
+	argNum := len(cmd.arguments)
+	if argNum > 0 {
+		return fmt.Errorf("error: users command takes no arguments")
+	}
+
 	users, err := s.db.GetUsers(context.Background())
 	if err != nil {
 		return err
@@ -158,7 +167,7 @@ func handlerAgg(s *state, cmd command) error {
 func handlerAddFeed(s *state, cmd command) error {
 	argNum := len(cmd.arguments)
 	if argNum != 2 {
-		return fmt.Errorf("argumment number error. expected 2. receved %d", argNum)
+		return fmt.Errorf("argumment number error: expected 2. receved %d.\nexpected syntax: addfeed \"[name]\" [url]", argNum)
 	}
 
 	currentUser, err := s.db.GetUser(context.Background(), s.config.CurrentUserName)
