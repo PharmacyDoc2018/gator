@@ -60,7 +60,7 @@ func exeCommand(s *state, c *commands, args []string) error {
 func handlerLogin(s *state, cmd command) error {
 	argNum := len(cmd.arguments)
 	if argNum != 1 {
-		return fmt.Errorf("argumment number error. expected 1 argument. receved %d", argNum)
+		return fmt.Errorf("argumment number error. expected 1. receved %d", argNum)
 	}
 
 	loginName := cmd.arguments[0]
@@ -81,7 +81,7 @@ func handlerLogin(s *state, cmd command) error {
 func handlerRegister(s *state, cmd command) error {
 	argNum := len(cmd.arguments)
 	if argNum != 1 {
-		return fmt.Errorf("argumment number error. expected 1 argument. receved %d", argNum)
+		return fmt.Errorf("argumment number error. expected 1. receved %d", argNum)
 	}
 
 	params := database.CreateUserParams{
@@ -158,7 +158,7 @@ func handlerAgg(s *state, cmd command) error {
 func handlerAddFeed(s *state, cmd command) error {
 	argNum := len(cmd.arguments)
 	if argNum != 2 {
-		return fmt.Errorf("argumment number error. expected 2 argument. receved %d", argNum)
+		return fmt.Errorf("argumment number error. expected 2. receved %d", argNum)
 	}
 
 	currentUser, err := s.db.GetUser(context.Background(), s.config.CurrentUserName)
