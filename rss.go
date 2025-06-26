@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/xml"
+	"html"
 	"io"
 	"net/http"
 )
@@ -20,13 +21,13 @@ type RSSFeed struct {
 		Link        string    `xml:"link"`
 		Description string    `xml:"description"`
 		Item        []RSSItem `xml:"item"`
-	}
+	} `xml:"channel"`
 }
 
 func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	var fetchedRSSFeed RSSFeed
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, feedURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, feedURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -44,8 +45,18 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	}
 	res.Body.Close()
 
-	err = xml.Unmarshal(resData, fetchedRSSFeed)
+	err = xml.Unmarshal(resData, &fetchedRSSFeed)
 	if err != nil {
 		return nil, err
 	}
+
+	fetchedRSSFeed.Channel.Title = html.UnescapeString(fetchedRSSFeed.Channel.Title)
+	fetchedRSSFeed.Channel.Description = html.UnescapeString(fetchedRSSFeed.Channel.Description)
+	for i := range fetchedRSSFeed.Channel.Item {
+		fetchedRSSFeed.Channel.Item[i].Title = html.UnescapeString(fetchedRSSFeed.Channel.Item[i].Title)
+		fetchedRSSFeed.Channel.Item[i].Description = html.UnescapeString(fetchedRSSFeed.Channel.Item[i].Description)
+	}
+
+	return &fetchedRSSFeed, nil
+
 }

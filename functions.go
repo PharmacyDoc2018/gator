@@ -36,6 +36,7 @@ func initCommands() *commands {
 	cmds.list["register"] = handlerRegister
 	cmds.list["reset"] = handlerReset
 	cmds.list["users"] = handlerUsers
+	cmds.list["agg"] = handlerAgg
 	return &cmds
 }
 
@@ -138,5 +139,17 @@ func handlerUsers(s *state, cmd command) error {
 		}
 		fmt.Println(printLine)
 	}
+	return nil
+}
+
+func handlerAgg(s *state, cmd command) error {
+	url := "https://www.wagslane.dev/index.xml"
+
+	rss, err := fetchFeed(context.Background(), url)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(rss)
 	return nil
 }
