@@ -37,6 +37,7 @@ func initCommands() *commands {
 	cmds.list["reset"] = handlerReset
 	cmds.list["users"] = handlerUsers
 	cmds.list["agg"] = handlerAgg
+	cmds.list["addfeed"] = handlerAddFeed
 	return &cmds
 }
 
@@ -151,5 +152,44 @@ func handlerAgg(s *state, cmd command) error {
 	}
 
 	fmt.Println(rss)
+	return nil
+}
+
+func handlerAddFeed(s *state, cmd command) error {
+	argNum := len(cmd.arguments)
+	if argNum != 2 {
+		return fmt.Errorf("argumment number error. expected 1 argument. receved %d", argNum)
+	}
+
+	currentUser, err := s.db.GetUser(context.Background(), s.config.CurrentUserName)
+	if err != nil {
+		return err
+	}
+
+	feedName := cmd.arguments[0]
+	feedURL := cmd.arguments[1]
+
+	params := database.AddFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      feedName,
+		Url:       feedURL,
+		UserID:    currentUser.ID,
+	}
+
+	feed, err := s.db.AddFeed(context.Background(), params)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("feed successfully added")
+	fmt.Println("ID:", feed.ID)
+	fmt.Println("CreatedAt:", feed.CreatedAt)
+	fmt.Println("UpdatedAt:", feed.UpdatedAt)
+	fmt.Println("Name:", feed.Name)
+	fmt.Println("url:", feed.Url)
+	fmt.Println("UserID:", feed.UserID)
+
 	return nil
 }
