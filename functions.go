@@ -179,7 +179,7 @@ func handlerAddFeed(s *state, cmd command) error {
 	feedName := cmd.arguments[0]
 	feedURL := cmd.arguments[1]
 
-	_, err = fetchFeed(context.Background(), feedURL)
+	_, err = fetchFeed(context.Background(), feedURL) // Makes sure url is good
 	if err != nil {
 		return err
 	}
@@ -195,7 +195,11 @@ func handlerAddFeed(s *state, cmd command) error {
 
 	feed, err := s.db.AddFeed(context.Background(), params)
 	if err != nil {
-		return err
+		if fmt.Sprint(err) == "pq: duplicate key value violates unique constraint \"feeds_url_key\"" {
+			return fmt.Errorf("error: another user already owns this feed")
+		} else {
+			return err
+		}
 	}
 
 	fmt.Println("feed successfully added")
