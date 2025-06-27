@@ -38,6 +38,7 @@ func initCommands() *commands {
 	cmds.list["users"] = handlerUsers
 	cmds.list["agg"] = handlerAgg
 	cmds.list["addfeed"] = handlerAddFeed
+	cmds.list["feeds"] = handlerFeeds
 	return &cmds
 }
 
@@ -204,6 +205,33 @@ func handlerAddFeed(s *state, cmd command) error {
 	fmt.Println("Name:", feed.Name)
 	fmt.Println("url:", feed.Url)
 	fmt.Println("UserID:", feed.UserID)
+
+	return nil
+}
+
+func handlerFeeds(s *state, cmd command) error {
+	argNum := len(cmd.arguments)
+	if argNum > 0 {
+		return fmt.Errorf("error: feeds command takes no arguments")
+	}
+
+	feeds, err := s.db.GetFeeds(context.Background())
+	if err != nil {
+		return err
+	}
+
+	if len(feeds) == 0 {
+		fmt.Println("no feeds found")
+		return nil
+	}
+
+	for i, feed := range feeds {
+		fmt.Printf("%d:\n", i+1)
+		fmt.Println("Feed Name:", feed.Name)
+		fmt.Println("URL:", feed.Url)
+		fmt.Println("Owner Name:", feed.Name_2)
+		fmt.Println("")
+	}
 
 	return nil
 }
