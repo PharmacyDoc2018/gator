@@ -40,6 +40,7 @@ func initCommands() *commands {
 	cmds.list["addfeed"] = handlerAddFeed
 	cmds.list["feeds"] = handlerFeeds
 	cmds.list["follow"] = handlerFollow
+	cmds.list["following"] = handlerFollowing
 	return &cmds
 }
 
@@ -274,5 +275,33 @@ func handlerFollow(s *state, cmd command) error {
 
 	fmt.Println("Follow Successful")
 	fmt.Println(currentUser.Name, "now following", feed.Name)
+	return nil
+}
+
+func handlerFollowing(s *state, cmd command) error {
+	argNum := len(cmd.arguments)
+	if argNum > 0 {
+		return fmt.Errorf("error: following command takes no arguments")
+	}
+
+	currentUser, err := s.db.GetUser(context.Background(), s.config.CurrentUserName)
+	if err != nil {
+		return err
+	}
+
+	feedsFollowing, err := s.db.GetFeedFollowsForUser(context.Background(), currentUser.ID)
+	if err != nil {
+		return err
+	}
+
+	if len(feedsFollowing) == 0 {
+		fmt.Println("you are not following any feeds")
+	}
+
+	fmt.Printf("Feeds followed by %s:\n", currentUser.Name)
+	for i, row := range feedsFollowing {
+		fmt.Printf("%d. \"%s\" owned by %s\n", i+1, row.Name, row.Name_2)
+	}
+
 	return nil
 }
