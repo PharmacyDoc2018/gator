@@ -39,6 +39,7 @@ func initCommands() *commands {
 	cmds.list["agg"] = handlerAgg
 	cmds.list["addfeed"] = handlerAddFeed
 	cmds.list["feeds"] = handlerFeeds
+	cmds.list["follow"] = handlerFollow
 	return &cmds
 }
 
@@ -237,5 +238,41 @@ func handlerFeeds(s *state, cmd command) error {
 		fmt.Println("")
 	}
 
+	return nil
+}
+
+func handlerFollow(s *state, cmd command) error {
+	argNum := len(cmd.arguments)
+	if argNum != 1 {
+		return fmt.Errorf("argumment number error: expected 1. receved %d.\nexpected syntax: follow [url]", argNum)
+	}
+
+	currentUser, err := s.db.GetUser(context.Background(), s.config.CurrentUserName)
+	if err != nil {
+		return err
+	}
+
+	feedURL := cmd.arguments[0]
+
+	feed, err := s.db.GetFeed(context.Background(), feedURL)
+	if err != nil {
+		return err
+	}
+
+	params := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    currentUser.ID,
+		FeedID:    feed.ID,
+	}
+
+	_, err = s.db.CreateFeedFollow(context.Background(), params)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Follow Successful")
+	fmt.Println(currentUser.Name, "now following", feed.Name)
 	return nil
 }
