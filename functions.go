@@ -305,13 +305,23 @@ func handlerFollowing(s *state, cmd command) error {
 		return err
 	}
 
-	if len(feedsFollowing) == 0 {
-		fmt.Println("you are not following any feeds")
+	feedsOwned, err := s.db.GetFeedsOwned(context.Background(), currentUser.ID)
+	if err != nil {
+		return err
+	}
+
+	if len(feedsFollowing) == 0 && len(feedsOwned) == 0 {
+		fmt.Println("you do not own or follow any feeds")
 	}
 
 	fmt.Printf("Feeds followed by %s:\n", currentUser.Name)
-	for i, row := range feedsFollowing {
-		fmt.Printf("%d. \"%s\" owned by %s\n", i+1, row.Name, row.Name_2)
+	ct := 1
+	for _, row := range feedsFollowing {
+		fmt.Printf("%d. \"%s\" owned by %s\n", ct, row.Name, row.Name_2)
+		ct++
+	}
+	for _, row := range feedsOwned {
+		fmt.Printf("%d. \"%s\" owned by you\n", ct, row)
 	}
 
 	return nil

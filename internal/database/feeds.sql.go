@@ -108,3 +108,31 @@ func (q *Queries) GetFeeds(ctx context.Context) ([]GetFeedsRow, error) {
 	}
 	return items, nil
 }
+
+const getFeedsOwned = `-- name: GetFeedsOwned :many
+SELECT feeds.name FROM feeds
+WHERE feeds.user_id = $1
+`
+
+func (q *Queries) GetFeedsOwned(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, getFeedsOwned, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

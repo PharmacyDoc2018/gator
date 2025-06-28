@@ -18,3 +18,7 @@ ON feeds.user_id = users.id;
 -- name: GetFeed :one
 SELECT * FROM feeds 
 WHERE url = $1 LIMIT 1;
+
+-- name: GetFeedsOwned :many
+SELECT feeds.name FROM feeds
+WHERE feeds.user_id = $1;
