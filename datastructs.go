@@ -35,7 +35,7 @@ func (c *commands) run(s *state, cmd command) error {
 }
 
 func (c *commands) register(name string, f func(*state, command) error) error {
-	for key, _ := range c.list {
+	for key := range c.list {
 		if name == key {
 			return fmt.Errorf("command already exists")
 		}

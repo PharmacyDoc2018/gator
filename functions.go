@@ -32,15 +32,15 @@ func initNewState() (*state, *sql.DB, error) {
 func initCommands() *commands {
 	var cmds commands
 	cmds.list = make(map[string]func(*state, command) error)
-	cmds.list["login"] = handlerLogin
-	cmds.list["register"] = handlerRegister
-	cmds.list["reset"] = handlerReset
-	cmds.list["users"] = handlerUsers
-	cmds.list["agg"] = handlerAgg
-	cmds.list["addfeed"] = handlerAddFeed
-	cmds.list["feeds"] = handlerFeeds
-	cmds.list["follow"] = handlerFollow
-	cmds.list["following"] = handlerFollowing
+	cmds.register("login", handlerLogin)
+	cmds.register("register", handlerRegister)
+	cmds.register("reset", handlerReset)
+	cmds.register("users", handlerUsers)
+	cmds.register("agg", handlerAgg)
+	cmds.register("addfeed", handlerAddFeed)
+	cmds.register("feeds", handlerFeeds)
+	cmds.register("follow", handlerFollow)
+	cmds.register("following", handlerFollowing)
 	return &cmds
 }
 
