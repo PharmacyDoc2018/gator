@@ -37,10 +37,10 @@ func initCommands() *commands {
 	cmds.register("reset", handlerReset)
 	cmds.register("users", handlerUsers)
 	cmds.register("agg", handlerAgg)
-	cmds.register("addfeed", handlerAddFeed)
+	cmds.register("addfeed", middlewareLoggedIn(handlerAddFeed))
 	cmds.register("feeds", handlerFeeds)
-	cmds.register("follow", handlerFollow)
-	cmds.register("following", handlerFollowing)
+	cmds.register("follow", middlewareLoggedIn(handlerFollow))
+	cmds.register("following", middlewareLoggedIn(handlerFollowing))
 	return &cmds
 }
 
@@ -58,6 +58,22 @@ func exeCommand(s *state, c *commands, args []string) error {
 		return err
 	}
 	return nil
+}
+
+func middlewareLoggedIn(handler func(s *state, cmd command, user database.User) error) func(*state, command) error {
+	return func(s *state, cmd command) error {
+		user, err := s.db.GetUser(context.Background(), s.config.CurrentUserName)
+		if err != nil {
+			return err
+		}
+
+		err = handler(s, cmd, user)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
 }
 
 func handlerLogin(s *state, cmd command) error {
@@ -167,21 +183,16 @@ func handlerAgg(s *state, cmd command) error {
 	return nil
 }
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, user database.User) error {
 	argNum := len(cmd.arguments)
 	if argNum != 2 {
 		return fmt.Errorf("argumment number error: expected 2. receved %d.\nexpected syntax: addfeed \"[name]\" [url]", argNum)
 	}
 
-	currentUser, err := s.db.GetUser(context.Background(), s.config.CurrentUserName)
-	if err != nil {
-		return err
-	}
-
 	feedName := cmd.arguments[0]
 	feedURL := cmd.arguments[1]
 
-	_, err = fetchFeed(context.Background(), feedURL) // Makes sure url is good
+	_, err := fetchFeed(context.Background(), feedURL) // Makes sure url is good
 	if err != nil {
 		return err
 	}
@@ -192,7 +203,7 @@ func handlerAddFeed(s *state, cmd command) error {
 		UpdatedAt: time.Now(),
 		Name:      feedName,
 		Url:       feedURL,
-		UserID:    currentUser.ID,
+		UserID:    user.ID,
 	}
 
 	feed, err := s.db.AddFeed(context.Background(), params)
@@ -204,7 +215,7 @@ func handlerAddFeed(s *state, cmd command) error {
 			var newArguments []string
 			newArguments = append(newArguments, cmd.arguments[1])
 			cmd.arguments = newArguments
-			err = handlerFollow(s, cmd)
+			err = handlerFollow(s, cmd, user)
 			if err != nil {
 				return err
 			}
@@ -253,15 +264,10 @@ func handlerFeeds(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, user database.User) error {
 	argNum := len(cmd.arguments)
 	if argNum != 1 {
 		return fmt.Errorf("argumment number error: expected 1. receved %d.\nexpected syntax: follow [url]", argNum)
-	}
-
-	currentUser, err := s.db.GetUser(context.Background(), s.config.CurrentUserName)
-	if err != nil {
-		return err
 	}
 
 	feedURL := cmd.arguments[0]
@@ -275,7 +281,7 @@ func handlerFollow(s *state, cmd command) error {
 		ID:        uuid.New(),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
-		UserID:    currentUser.ID,
+		UserID:    user.ID,
 		FeedID:    feed.ID,
 	}
 
@@ -285,27 +291,22 @@ func handlerFollow(s *state, cmd command) error {
 	}
 
 	fmt.Println("Follow Successful")
-	fmt.Println(currentUser.Name, "now following", feed.Name)
+	fmt.Println(user.Name, "now following", feed.Name)
 	return nil
 }
 
-func handlerFollowing(s *state, cmd command) error {
+func handlerFollowing(s *state, cmd command, user database.User) error {
 	argNum := len(cmd.arguments)
 	if argNum > 0 {
 		return fmt.Errorf("error: following command takes no arguments")
 	}
 
-	currentUser, err := s.db.GetUser(context.Background(), s.config.CurrentUserName)
+	feedsFollowing, err := s.db.GetFeedFollowsForUser(context.Background(), user.ID)
 	if err != nil {
 		return err
 	}
 
-	feedsFollowing, err := s.db.GetFeedFollowsForUser(context.Background(), currentUser.ID)
-	if err != nil {
-		return err
-	}
-
-	feedsOwned, err := s.db.GetFeedsOwned(context.Background(), currentUser.ID)
+	feedsOwned, err := s.db.GetFeedsOwned(context.Background(), user.ID)
 	if err != nil {
 		return err
 	}
@@ -314,7 +315,7 @@ func handlerFollowing(s *state, cmd command) error {
 		fmt.Println("you do not own or follow any feeds")
 	}
 
-	fmt.Printf("Feeds followed by %s:\n", currentUser.Name)
+	fmt.Printf("Feeds followed by %s:\n", user.Name)
 	ct := 1
 	for _, row := range feedsFollowing {
 		fmt.Printf("%d. \"%s\" owned by %s\n", ct, row.Name, row.Name_2)
