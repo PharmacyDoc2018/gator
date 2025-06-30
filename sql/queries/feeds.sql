@@ -22,3 +22,10 @@ WHERE url = $1 LIMIT 1;
 -- name: GetFeedsOwned :many
 SELECT feeds.name FROM feeds
 WHERE feeds.user_id = $1;
+
+-- name: IsOwnerFeed :one
+SELECT EXISTS (
+    SELECT 1 FROM feeds
+    WHERE user_id = $1
+    AND feeds.url = $2
+);

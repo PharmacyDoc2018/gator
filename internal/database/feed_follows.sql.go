@@ -73,6 +73,24 @@ func (q *Queries) CreateFeedFollow(ctx context.Context, arg CreateFeedFollowPara
 	return items, nil
 }
 
+const deleteFollow = `-- name: DeleteFollow :exec
+DELETE FROM feed_follows
+USING feeds
+WHERE feed_follows.feed_id = feeds.id
+AND feed_follows.user_id = $1
+AND feeds.url = $2
+`
+
+type DeleteFollowParams struct {
+	UserID uuid.UUID
+	Url    string
+}
+
+func (q *Queries) DeleteFollow(ctx context.Context, arg DeleteFollowParams) error {
+	_, err := q.db.ExecContext(ctx, deleteFollow, arg.UserID, arg.Url)
+	return err
+}
+
 const getFeedFollowsForUser = `-- name: GetFeedFollowsForUser :many
 SELECT feeds.name, users.name 
 FROM feed_follows
@@ -109,4 +127,26 @@ func (q *Queries) GetFeedFollowsForUser(ctx context.Context, userID uuid.UUID) (
 		return nil, err
 	}
 	return items, nil
+}
+
+const isFollowingFeed = `-- name: IsFollowingFeed :one
+SELECT EXISTS (
+    SELECT 1 FROM feed_follows
+    INNER JOIN feeds 
+    ON feed_follows.feed_id = feeds.id
+    WHERE feed_follows.user_id = $1
+    AND feeds.url = $2
+)
+`
+
+type IsFollowingFeedParams struct {
+	UserID uuid.UUID
+	Url    string
+}
+
+func (q *Queries) IsFollowingFeed(ctx context.Context, arg IsFollowingFeedParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, isFollowingFeed, arg.UserID, arg.Url)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }

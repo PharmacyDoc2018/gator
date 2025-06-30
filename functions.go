@@ -41,6 +41,7 @@ func initCommands() *commands {
 	cmds.register("feeds", handlerFeeds)
 	cmds.register("follow", middlewareLoggedIn(handlerFollow))
 	cmds.register("following", middlewareLoggedIn(handlerFollowing))
+	cmds.register("unfollow", middlewareLoggedIn(handlerUnfollow))
 	return &cmds
 }
 
@@ -323,6 +324,55 @@ func handlerFollowing(s *state, cmd command, user database.User) error {
 	}
 	for _, row := range feedsOwned {
 		fmt.Printf("%d. \"%s\" owned by you\n", ct, row)
+	}
+
+	return nil
+}
+
+func handlerUnfollow(s *state, cmd command, user database.User) error {
+	argNum := len(cmd.arguments)
+	if argNum != 1 {
+		return fmt.Errorf("argumment number error: expected 1. receved %d.\nexpected syntax: unfollow [url]", argNum)
+	}
+
+	feedURL := cmd.arguments[0]
+	isFollowingParams := database.IsFollowingFeedParams{
+		UserID: user.ID,
+		Url:    feedURL,
+	}
+
+	isFollowing, err := s.db.IsFollowingFeed(context.Background(), isFollowingParams)
+	if err != nil {
+		return err
+	}
+
+	if isFollowing {
+		deleteParams := database.DeleteFollowParams{
+			UserID: user.ID,
+			Url:    feedURL,
+		}
+		err := s.db.DeleteFollow(context.Background(), deleteParams)
+		if err != nil {
+			return err
+		}
+		fmt.Println("Unfollow Successful")
+		return nil
+	}
+
+	isOwnerParams := database.IsOwnerFeedParams{
+		UserID: user.ID,
+		Url:    feedURL,
+	}
+
+	isOwner, err := s.db.IsOwnerFeed(context.Background(), isOwnerParams)
+	if err != nil {
+		return err
+	}
+
+	if isOwner {
+		//see who is following and make them the owner
+		//if no one following, delete the feed
+		return nil
 	}
 
 	return nil

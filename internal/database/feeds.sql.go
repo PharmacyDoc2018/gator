@@ -136,3 +136,23 @@ func (q *Queries) GetFeedsOwned(ctx context.Context, userID uuid.UUID) ([]string
 	}
 	return items, nil
 }
+
+const isOwnerFeed = `-- name: IsOwnerFeed :one
+SELECT EXISTS (
+    SELECT 1 FROM feeds
+    WHERE user_id = $1
+    AND feeds.url = $2
+)
+`
+
+type IsOwnerFeedParams struct {
+	UserID uuid.UUID
+	Url    string
+}
+
+func (q *Queries) IsOwnerFeed(ctx context.Context, arg IsOwnerFeedParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, isOwnerFeed, arg.UserID, arg.Url)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
