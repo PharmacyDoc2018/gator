@@ -375,17 +375,16 @@ func handlerUnfollow(s *state, cmd command, user database.User) error {
 		//if no one following, delete the feed
 		longestFollower, err := s.db.GetLongestFollowerForFeed(context.Background(), feedURL)
 		if err != nil {
-			return err
-		}
-
-		var blankLongersFollower database.GetLongestFollowerForFeedRow
-		if longestFollower == blankLongersFollower { // No followers. Delete the feed.
-			err = s.db.DeleteFeed(context.Background(), feedURL)
-			if err != nil {
+			if fmt.Sprint(err) == "sql: no rows in result set" {
+				err = s.db.DeleteFeed(context.Background(), feedURL)
+				if err != nil {
+					return err
+				}
+				fmt.Println("Feed has been deleted")
+				return nil
+			} else {
 				return err
 			}
-			fmt.Println("Feed has been deleted")
-			return nil
 		}
 
 		updateParams := database.UpdateFeedOwnerParams{
