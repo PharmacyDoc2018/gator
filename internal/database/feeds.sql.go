@@ -55,6 +55,16 @@ func (q *Queries) AddFeed(ctx context.Context, arg AddFeedParams) (Feed, error) 
 	return i, err
 }
 
+const deleteFeed = `-- name: DeleteFeed :exec
+DELETE FROM feeds
+WHERE url = $1
+`
+
+func (q *Queries) DeleteFeed(ctx context.Context, url string) error {
+	_, err := q.db.ExecContext(ctx, deleteFeed, url)
+	return err
+}
+
 const getFeed = `-- name: GetFeed :one
 SELECT id, created_at, updated_at, name, url, user_id FROM feeds 
 WHERE url = $1 LIMIT 1
@@ -155,4 +165,23 @@ func (q *Queries) IsOwnerFeed(ctx context.Context, arg IsOwnerFeedParams) (bool,
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const updateFeedOwner = `-- name: UpdateFeedOwner :exec
+UPDATE feeds
+SET 
+    user_id = $1,
+    updated_at = $2
+WHERE id = $3
+`
+
+type UpdateFeedOwnerParams struct {
+	UserID    uuid.UUID
+	UpdatedAt time.Time
+	ID        uuid.UUID
+}
+
+func (q *Queries) UpdateFeedOwner(ctx context.Context, arg UpdateFeedOwnerParams) error {
+	_, err := q.db.ExecContext(ctx, updateFeedOwner, arg.UserID, arg.UpdatedAt, arg.ID)
+	return err
 }

@@ -314,6 +314,7 @@ func handlerFollowing(s *state, cmd command, user database.User) error {
 
 	if len(feedsFollowing) == 0 && len(feedsOwned) == 0 {
 		fmt.Println("you do not own or follow any feeds")
+		return nil
 	}
 
 	fmt.Printf("Feeds followed by %s:\n", user.Name)
@@ -372,6 +373,44 @@ func handlerUnfollow(s *state, cmd command, user database.User) error {
 	if isOwner {
 		//see who is following and make them the owner
 		//if no one following, delete the feed
+		longestFollower, err := s.db.GetLongestFollowerForFeed(context.Background(), feedURL)
+		if err != nil {
+			return err
+		}
+
+		var blankLongersFollower database.GetLongestFollowerForFeedRow
+		if longestFollower == blankLongersFollower { // No followers. Delete the feed.
+			err = s.db.DeleteFeed(context.Background(), feedURL)
+			if err != nil {
+				return err
+			}
+			fmt.Println("Feed has been deleted")
+			return nil
+		}
+
+		updateParams := database.UpdateFeedOwnerParams{
+			UserID:    longestFollower.ID_3,
+			UpdatedAt: time.Now(),
+			ID:        longestFollower.ID_2,
+		}
+
+		err = s.db.UpdateFeedOwner(context.Background(), updateParams) // Set longest follower as the new feed owner.
+		if err != nil {
+			return err
+		}
+
+		err = s.db.DeleteFollowByID(context.Background(), longestFollower.ID) // Delete the follow entry for the new owner.
+		if err != nil {
+			return err
+		}
+
+		newOwner, err := s.db.GetUserByID(context.Background(), longestFollower.ID_3)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("Feed ownership transfered transfered to %s\n", newOwner.Name)
+
 		return nil
 	}
 

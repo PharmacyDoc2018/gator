@@ -29,3 +29,14 @@ SELECT EXISTS (
     WHERE user_id = $1
     AND feeds.url = $2
 );
+
+-- name: DeleteFeed :exec
+DELETE FROM feeds
+WHERE url = $1;
+
+-- name: UpdateFeedOwner :exec
+UPDATE feeds
+SET 
+    user_id = $1,
+    updated_at = $2
+WHERE id = $3;

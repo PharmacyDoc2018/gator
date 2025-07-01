@@ -91,6 +91,16 @@ func (q *Queries) DeleteFollow(ctx context.Context, arg DeleteFollowParams) erro
 	return err
 }
 
+const deleteFollowByID = `-- name: DeleteFollowByID :exec
+DELETE FROM feed_follows
+WHERE id = $1
+`
+
+func (q *Queries) DeleteFollowByID(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteFollowByID, id)
+	return err
+}
+
 const getFeedFollowsForUser = `-- name: GetFeedFollowsForUser :many
 SELECT feeds.name, users.name 
 FROM feed_follows
@@ -127,6 +137,29 @@ func (q *Queries) GetFeedFollowsForUser(ctx context.Context, userID uuid.UUID) (
 		return nil, err
 	}
 	return items, nil
+}
+
+const getLongestFollowerForFeed = `-- name: GetLongestFollowerForFeed :one
+SELECT feed_follows.id, feeds.id, users.id
+FROM feed_follows
+JOIN users ON feed_follows.user_id = users.id
+JOIN feeds on feed_follows.feed_id = feeds.id
+WHERE feeds.url = $1
+ORDER BY feed_follows.created_at ASC
+LIMIT 1
+`
+
+type GetLongestFollowerForFeedRow struct {
+	ID   uuid.UUID
+	ID_2 uuid.UUID
+	ID_3 uuid.UUID
+}
+
+func (q *Queries) GetLongestFollowerForFeed(ctx context.Context, url string) (GetLongestFollowerForFeedRow, error) {
+	row := q.db.QueryRowContext(ctx, getLongestFollowerForFeed, url)
+	var i GetLongestFollowerForFeedRow
+	err := row.Scan(&i.ID, &i.ID_2, &i.ID_3)
+	return i, err
 }
 
 const isFollowingFeed = `-- name: IsFollowingFeed :one
