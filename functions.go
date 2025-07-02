@@ -173,15 +173,23 @@ func handlerUsers(s *state, cmd command) error {
 }
 
 func handlerAgg(s *state, cmd command) error {
-	url := "https://www.wagslane.dev/index.xml"
+	argNum := len(cmd.arguments)
+	if argNum != 1 {
+		return fmt.Errorf("argumment number error: expected 1. receved %d.\nexpected syntax: agg [time i.e. 1m]", argNum)
 
-	rss, err := fetchFeed(context.Background(), url)
+	}
+
+	time_between_reqs := cmd.arguments[0]
+	timeBetweenReqs, err := time.ParseDuration(time_between_reqs)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(rss)
-	return nil
+	fmt.Println("Collecting feeds every", time_between_reqs)
+	ticker := time.NewTicker(timeBetweenReqs)
+	for ; ; <-ticker.C {
+		scrapeFeeds(s)
+	}
 }
 
 func handlerAddFeed(s *state, cmd command, user database.User) error {

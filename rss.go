@@ -3,9 +3,13 @@ package main
 import (
 	"context"
 	"encoding/xml"
+	"fmt"
 	"html"
 	"io"
 	"net/http"
+	"time"
+
+	"github.com/PharmacyDoc2018/gator/internal/database"
 )
 
 type RSSItem struct {
@@ -58,5 +62,33 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	}
 
 	return &fetchedRSSFeed, nil
+}
 
+func scrapeFeeds(s *state) error {
+	feed, err := s.db.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		return err
+	}
+
+	params := database.MarkFeedFetchedParams{
+		ID:        feed.ID,
+		UpdatedAt: time.Now(),
+	}
+
+	err = s.db.MarkFeedFetched(context.Background(), params)
+	if err != nil {
+		return err
+	}
+
+	fetchedFeed, err := fetchFeed(context.Background(), feed.Url)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range fetchedFeed.Channel.Item {
+		fmt.Println(item.Title)
+		fmt.Println()
+	}
+
+	return nil
 }
