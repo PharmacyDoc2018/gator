@@ -77,6 +77,7 @@ var layouts = []string{
 	"Jan 2, 2006 at 3:04pm", // informal format
 	"January 2, 2006",       // full month name
 	"2006/01/02",            // slash-separated
+	"Mon, 02 Jan 2006 15:04:05 EDT",
 }
 
 // TryParseDate attempts to parse a string using multiple layouts
@@ -86,7 +87,7 @@ func TryParseDate(value string) (time.Time, error) {
 			return t, nil
 		}
 	}
-	return time.Time{}, fmt.Errorf("could not parse time: unsupported format")
+	return time.Time{}, fmt.Errorf("could not parse time: unsupported format\n%s", value)
 }
 
 func scrapeFeeds(s *state) error {
@@ -136,6 +137,7 @@ func scrapeFeeds(s *state) error {
 		if err != nil {
 			if fmt.Sprint(err) == "pq: duplicate key value violates unique constraint \"posts_url_key\"" {
 				// Ignore error. Expected duplicate.
+				continue
 			} else {
 				return err
 			}
