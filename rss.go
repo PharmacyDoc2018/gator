@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/xml"
 	"fmt"
 	"html"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/PharmacyDoc2018/gator/internal/database"
+	"github.com/google/uuid"
 )
 
 type RSSItem struct {
@@ -64,6 +66,29 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	return &fetchedRSSFeed, nil
 }
 
+var layouts = []string{
+	time.RFC3339,
+	"2006-01-02 15:04:05",   // MySQL DATETIME
+	"2006-01-02",            // ISO Date
+	"01/02/2006",            // US format
+	"02 Jan 2006",           // e.g. 02 Jan 2006
+	"02 Jan 2006 15:04",     // e.g. 02 Jan 2006 15:04
+	"02 Jan 2006 15:04:05",  // e.g. 02 Jan 2006 15:04:05
+	"Jan 2, 2006 at 3:04pm", // informal format
+	"January 2, 2006",       // full month name
+	"2006/01/02",            // slash-separated
+}
+
+// TryParseDate attempts to parse a string using multiple layouts
+func TryParseDate(value string) (time.Time, error) {
+	for _, layout := range layouts {
+		if t, err := time.Parse(layout, value); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("could not parse time: unsupported format")
+}
+
 func scrapeFeeds(s *state) error {
 	feed, err := s.db.GetNextFeedToFetch(context.Background())
 	if err != nil {
@@ -86,8 +111,37 @@ func scrapeFeeds(s *state) error {
 	}
 
 	for _, item := range fetchedFeed.Channel.Item {
-		fmt.Println(item.Title)
-		fmt.Println()
+		pubTime, err := TryParseDate(item.PubDate)
+		if err != nil {
+			return err
+		}
+		params := database.CreatePostParams{
+			ID:        uuid.New(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			Title:     item.Title,
+			Url:       item.Link,
+			Description: sql.NullString{
+				String: item.Description,
+				Valid:  item.Description != "",
+			},
+			PublishedAt: sql.NullTime{
+				Time:  pubTime,
+				Valid: item.PubDate != "",
+			},
+			FeedID: feed.ID,
+		}
+
+		post, err := s.db.CreatePost(context.Background(), params)
+		if err != nil {
+			if fmt.Sprint(err) == "pq: duplicate key value violates unique constraint \"posts_url_key\"" {
+				// Ignore error. Expected duplicate.
+			} else {
+				return err
+			}
+		}
+
+		fmt.Println("New post added:", post.Title)
 	}
 
 	return nil
