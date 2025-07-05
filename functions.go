@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/PharmacyDoc2018/gator/internal/config"
@@ -42,6 +43,7 @@ func initCommands() *commands {
 	cmds.register("follow", middlewareLoggedIn(handlerFollow))
 	cmds.register("following", middlewareLoggedIn(handlerFollowing))
 	cmds.register("unfollow", middlewareLoggedIn(handlerUnfollow))
+	cmds.register("browse", middlewareLoggedIn(handlerBrowse))
 	return &cmds
 }
 
@@ -425,4 +427,42 @@ func handlerUnfollow(s *state, cmd command, user database.User) error {
 	}
 
 	return nil
+}
+
+func handlerBrowse(s *state, cmd command, user database.User) error {
+	argNum := len(cmd.arguments)
+	if argNum != 1 {
+		return fmt.Errorf("argumment number error: expected 1. receved %d.\nexpected syntax: browse [n]", argNum)
+	}
+
+	numFeeds, err := strconv.Atoi(cmd.arguments[0])
+	if err != nil {
+		return err
+	}
+
+	if numFeeds < 0 {
+		return fmt.Errorf("error: argument cannot be a negative number")
+	}
+
+	params := database.GetPostsForUserParams{
+		UserID: user.ID,
+		Limit:  int32(numFeeds),
+	}
+
+	feeds, err := s.db.GetPostsForUser(context.Background(), params)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(len(feeds))
+	for _, feed := range feeds {
+		fmt.Println(feed.Title)
+		fmt.Println(feed.Url)
+		fmt.Println(feed.PublishedAt)
+		fmt.Println(feed.Description)
+		fmt.Println()
+	}
+
+	return nil
+
 }
